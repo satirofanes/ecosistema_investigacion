@@ -1,44 +1,30 @@
 import sys
 import os
-import subprocess
 from PyQt6.QtWidgets import (QApplication, QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, 
                              QPushButton, QLabel, QMessageBox, QDialog, QTextEdit)
 from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QPalette, QColor, QIcon
+
+# Importación directa con los nombres exactos de tus clases
+from modulo_fuentes import ModuloMaterialTrabajo
+from modulo_fichas import ModuloNotasReferencia
+from modulo_lienzo import ModuloLienzoMental
+from modulo_composicion import ModuloComposicion
+from modulo_gestion import ModuloGestion
 
 class VentanaInformacion(QDialog):
-    """Plantilla reutilizable para las ventanas de Ayuda, FAQ y Contacto"""
     def __init__(self, titulo, contenido_html, parent=None):
         super().__init__(parent)
         self.setWindowTitle(titulo)
         self.resize(500, 400)
-        self.setStyleSheet("""
-            QDialog {
-                background-color: #1e293b;
-            }
-            QTextEdit {
-                background-color: transparent;
-                color: #f8fafc;
-                font-size: 14px;
-                border: none;
-            }
-        """)
-        
+        self.setStyleSheet("QDialog { background-color: #1e293b; } QTextEdit { color: #f8fafc; font-size: 14px; border: none; }")
         layout = QVBoxLayout(self)
         visor_texto = QTextEdit()
         visor_texto.setReadOnly(True)
         visor_texto.setHtml(contenido_html)
-        
         btn_cerrar = QPushButton("Cerrar")
-        btn_cerrar.setCursor(Qt.CursorShape.PointingHandCursor)
-        btn_cerrar.setStyleSheet("""
-            QPushButton {
-                background-color: #3b82f6; color: white; 
-                padding: 8px; border-radius: 6px; font-weight: bold;
-            }
-            QPushButton:hover { background-color: #2563eb; }
-        """)
+        btn_cerrar.setStyleSheet("QPushButton { background-color: #3b82f6; color: white; padding: 8px; border-radius: 6px; font-weight: bold; }")
         btn_cerrar.clicked.connect(self.close)
-        
         layout.addWidget(visor_texto)
         layout.addWidget(btn_cerrar)
 
@@ -48,24 +34,21 @@ class LanzadorEcosistema(QWidget):
         self.setWindowTitle("Ecosistema de Investigación")
         self.resize(800, 550)
         
-        # Asignar un ID para aplicar el fondo a la ventana principal sin afectar a los hijos
+        # Diccionario para mantener vivas las ventanas en memoria
+        self.ventanas_activas = {}
+
         self.setObjectName("VentanaPrincipal")
         self.setStyleSheet("""
-            #VentanaPrincipal {
-                background-color: #0f172a;
-                border-image: url('fondo.jpg') 0 0 0 0 stretch stretch;
-            }
+            #VentanaPrincipal { background-color: #0f172a; border-image: url('fondo.jpg') 0 0 0 0 stretch stretch; }
             QLabel { color: #f8fafc; }
         """)
         
         layout_principal = QVBoxLayout(self)
         layout_principal.setContentsMargins(40, 40, 40, 20)
-        layout_principal.setSpacing(20)
         
-        # --- ENCABEZADO ---
         lbl_titulo = QLabel("Panel de Control de Investigación")
         lbl_titulo.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        lbl_titulo.setStyleSheet("font-size: 28px; font-weight: bold; text-shadow: 2px 2px 4px #000000;")
+        lbl_titulo.setStyleSheet("font-size: 28px; font-weight: bold;")
         
         lbl_subtitulo = QLabel("Selecciona un módulo para iniciar tu sesión de trabajo")
         lbl_subtitulo.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -74,35 +57,33 @@ class LanzadorEcosistema(QWidget):
         layout_principal.addWidget(lbl_titulo)
         layout_principal.addWidget(lbl_subtitulo)
         
-        # --- GRID DE MÓDULOS ---
         grid = QGridLayout()
         grid.setSpacing(15)
         
+        # Conexión directa a las clases importadas
         modulos = [
-            ("Módulo 1\nGestión de Fuentes", "rgba(52, 73, 94, 0.9)", "modulo_fuentes.py"),
-            ("Módulo 2\nFichas y Extracción", "rgba(22, 160, 133, 0.9)", "modulo_fichas.py"),
-            ("Módulo 3\nLienzo Mental", "rgba(41, 128, 185, 0.9)", "modulo_lienzo.py"),
-            ("Módulo 4\nDelineados y Word", "rgba(142, 68, 173, 0.9)", "modulo_composicion.py"),
+            ("Módulo 1\nGestión de Fuentes", "rgba(52, 73, 94, 0.9)", ModuloMaterialTrabajo),
+            ("Módulo 2\nFichas y Extracción", "rgba(22, 160, 133, 0.9)", ModuloNotasReferencia),
+            ("Módulo 3\nLienzo Mental", "rgba(41, 128, 185, 0.9)", ModuloLienzoMental),
+            ("Módulo 4\nDelineados y Word", "rgba(142, 68, 173, 0.9)", ModuloComposicion),
         ]
         
         fila, col = 0, 0
-        for titulo, color, archivo in modulos:
-            btn = self.crear_boton_modulo(titulo, color, archivo)
+        for titulo, color, clase_modulo in modulos:
+            btn = self.crear_boton_modulo(titulo, color, clase_modulo)
             grid.addWidget(btn, fila, col)
             col += 1
             if col > 1:
                 col = 0
                 fila += 1
                 
-        btn_mod5 = self.crear_boton_modulo("Módulo 5\nGestión de Proyectos y Proyección Académica", "rgba(39, 174, 96, 0.9)", "modulo_gestion.py")
+        btn_mod5 = self.crear_boton_modulo("Módulo 5\nGestión de Proyectos", "rgba(39, 174, 96, 0.9)", ModuloGestion)
         grid.addWidget(btn_mod5, 2, 0, 1, 2)
         
         layout_principal.addLayout(grid)
         layout_principal.addStretch()
         
-        # --- BARRA INFERIOR (INFORMACIÓN) ---
         barra_info = QHBoxLayout()
-        
         btn_ayuda = self.crear_boton_info("❔ Ayuda", self.mostrar_ayuda)
         btn_faq = self.crear_boton_info("💬 Preguntas Frecuentes", self.mostrar_faq)
         btn_acerca = self.crear_boton_info("ℹ️ Acerca de y Contacto", self.mostrar_acerca)
@@ -112,54 +93,29 @@ class LanzadorEcosistema(QWidget):
         barra_info.addWidget(btn_faq)
         barra_info.addWidget(btn_acerca)
         barra_info.addStretch()
-        
         layout_principal.addLayout(barra_info)
 
-    def crear_boton_modulo(self, texto, color, archivo):
+    def crear_boton_modulo(self, texto, color, clase_modulo):
         btn = QPushButton(texto)
         btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        btn.setStyleSheet(f"""
-            QPushButton {{
-                background-color: {color};
-                color: white; font-size: 16px; font-weight: bold;
-                border-radius: 12px; padding: 25px;
-                border: 1px solid rgba(255,255,255,0.2);
-            }}
-            QPushButton:hover {{
-                background-color: #cbd5e1;
-                color: #0f172a;
-                border: 2px solid white;
-            }}
-        """)
-        btn.clicked.connect(lambda: self.ejecutar_modulo(archivo))
+        btn.setStyleSheet(f"QPushButton {{ background-color: {color}; color: white; font-size: 16px; font-weight: bold; border-radius: 12px; padding: 25px; border: 1px solid rgba(255,255,255,0.2); }} QPushButton:hover {{ background-color: #cbd5e1; color: #0f172a; border: 2px solid white; }}")
+        btn.clicked.connect(lambda: self.ejecutar_modulo(clase_modulo))
         return btn
 
     def crear_boton_info(self, texto, funcion):
         btn = QPushButton(texto)
         btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        btn.setStyleSheet("""
-            QPushButton {
-                background-color: transparent;
-                color: #94a3b8; font-size: 13px; font-weight: bold;
-                padding: 5px 15px; border-radius: 15px;
-            }
-            QPushButton:hover {
-                background-color: rgba(255, 255, 255, 0.1);
-                color: white;
-            }
-        """)
+        btn.setStyleSheet("QPushButton { background-color: transparent; color: #94a3b8; font-size: 13px; font-weight: bold; padding: 5px 15px; border-radius: 15px; } QPushButton:hover { background-color: rgba(255, 255, 255, 0.1); color: white; }")
         btn.clicked.connect(funcion)
         return btn
 
-    # --- RUTINAS DE EJECUCIÓN E INTERFACES FLOTANTES ---
-    def ejecutar_modulo(self, nombre_archivo):
-        if os.path.exists(nombre_archivo):
-            try:
-                subprocess.Popen([sys.executable, nombre_archivo])
-            except Exception as e:
-                QMessageBox.critical(self, "Error de Ejecución", f"No se pudo iniciar el módulo.\nDetalle: {str(e)}")
-        else:
-            QMessageBox.warning(self, "Módulo no encontrado", f"No se encontró el archivo '{nombre_archivo}'.")
+    def ejecutar_modulo(self, clase_modulo):
+        try:
+            ventana = clase_modulo()
+            ventana.show()
+            self.ventanas_activas[id(ventana)] = ventana
+        except Exception as e:
+            QMessageBox.critical(self, "Error Fatal", f"No se pudo cargar el módulo.\n\n{e}")
 
     def mostrar_ayuda(self):
         html = """
@@ -197,7 +153,7 @@ class LanzadorEcosistema(QWidget):
         <br>
         <p>Desarrollado como una solución integral para estructurar el caos creativo de la investigación antropológica y académica.</p>
         <p><b>Contacto y Soporte:</b></p>
-        <p>tu-correo@archivodeantropologia.com<br>
+        <p>satirofanes@gmail.com<br>
         www.archivodeantropologia.com</p>
         """
         dialogo = VentanaInformacion("Acerca de y Contacto", html, self)
@@ -206,6 +162,26 @@ class LanzadorEcosistema(QWidget):
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     app.setStyle("Fusion")
+    
+    # Inyección de Ícono
+    app.setWindowIcon(QIcon("icono.ico"))
+
+    # Inyección de Paleta Oscura Global
+    paleta_oscura = QPalette()
+    paleta_oscura.setColor(QPalette.ColorRole.Window, QColor(15, 23, 42))
+    paleta_oscura.setColor(QPalette.ColorRole.WindowText, Qt.GlobalColor.white)
+    paleta_oscura.setColor(QPalette.ColorRole.Base, QColor(30, 41, 59))
+    paleta_oscura.setColor(QPalette.ColorRole.AlternateBase, QColor(15, 23, 42))
+    paleta_oscura.setColor(QPalette.ColorRole.ToolTipBase, Qt.GlobalColor.white)
+    paleta_oscura.setColor(QPalette.ColorRole.ToolTipText, Qt.GlobalColor.white)
+    paleta_oscura.setColor(QPalette.ColorRole.Text, Qt.GlobalColor.white)
+    paleta_oscura.setColor(QPalette.ColorRole.PlaceholderText, QColor(148, 163, 184))
+    paleta_oscura.setColor(QPalette.ColorRole.Button, QColor(51, 65, 85))
+    paleta_oscura.setColor(QPalette.ColorRole.ButtonText, Qt.GlobalColor.white)
+    paleta_oscura.setColor(QPalette.ColorRole.Highlight, QColor(59, 130, 246))
+    paleta_oscura.setColor(QPalette.ColorRole.HighlightedText, Qt.GlobalColor.white)
+    app.setPalette(paleta_oscura)
+
     ventana = LanzadorEcosistema()
     ventana.show()
     sys.exit(app.exec())
